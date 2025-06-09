@@ -10,28 +10,36 @@ from tkinter import filedialog, Tk
 # Configurações globais
 REPO_DIR = Path("library-super-store")
 DOCS_DIR = REPO_DIR / "Documentação do Projeto"
-BOOKS_DIR = Path("Livros")
+BOOKS_DIR = REPO_DIR / "Livros"  # Diretório dentro do repositório
 FILE_CATEGORIES = {
     'Livros': ['.pdf', '.epub'],
     'Documentos': ['.doc', '.docx', '.txt', '.odt', '.xlsx']
 }
 
 def setup_environment():
-    """Configura diretórios e verifica dependências"""
+    """Configura o ambiente e estrutura de diretórios"""
     try:
+        # Criar diretórios necessários
         REPO_DIR.mkdir(exist_ok=True)
         DOCS_DIR.mkdir(exist_ok=True)
         BOOKS_DIR.mkdir(exist_ok=True)
-    except OSError as e:
+
+        # Criar .gitignore se não existir
+        gitignore = REPO_DIR / ".gitignore"
+        if not gitignore.exists():
+            gitignore.write_text("*.DS_Store\n*.tmp\n*.bak\n__pycache__/\n")
+
+    except Exception as e:
         print(f"Erro crítico na configuração: {e}")
         sys.exit(1)
 
-def git_auto_commit():
-    """Realiza commit automático das mudanças"""
+def git_auto_commit(arquivo):
+    """Realiza commit automático do arquivo específico"""
     try:
-        subprocess.run(["git", "add", "."], cwd=REPO_DIR, check=True)
-        subprocess.run(["git", "commit", "-m", "Auto-commit: Atualização de arquivos"], 
-                       cwd=REPO_DIR, check=True)
+        subprocess.run(["git", "add", str(arquivo.relative_to(REPO_DIR))],
+                      cwd=REPO_DIR, check=True)
+        subprocess.run(["git", "commit", "-m", f"Adicionado: {arquivo.name}"],
+                      cwd=REPO_DIR, check=True)
         subprocess.run(["git", "push"], cwd=REPO_DIR, check=True)
     except subprocess.CalledProcessError as e:
         print(f"⚠️ Erro no Git: {e}")
@@ -39,6 +47,7 @@ def git_auto_commit():
 def listar_arquivos(diretorio=BOOKS_DIR):
     """Lista recursivamente todos os arquivos com numeração"""
     arquivos = []
+    print("\n📂 Conteúdo da Biblioteca:")
     for idx, item in enumerate(diretorio.rglob('*'), 1):
         if item.is_file():
             rel_path = item.relative_to(diretorio)
@@ -65,60 +74,153 @@ def selecionar_arquivo():
         except ValueError:
             print("Entrada inválida!")
 
+def abrir_arquivo(caminho):
+    """Abre o arquivo com o aplicativo padrão do sistema"""
+    try:
+        if platform.system() == 'Darwin':
+            subprocess.run(['open', caminho])
+        elif platform.system() == 'Windows':
+            os.startfile(caminho)
+        else:
+            subprocess.run(['xdg-open', caminho])
+    except Exception as e:
+        print(f"Erro ao abrir arquivo: {e}")
+
+def menu_listar():
+    """Menu para listar e abrir documentos"""
+    while True:
+        arquivo = selecionar_arquivo()
+        if not arquivo:
+            return
+        abrir_arquivo(arquivo)
+
 def handle_add_document():
-    """Submenu para adição de documentos com navegação"""
+    """Submenu para adição de documentos"""
     while True:
         print("\n📂 Adicionar Documento")
         print("1. Procurar arquivo no computador")
         print("2. Digitar caminho manualmente")
+        print("0. Voltar")
 
         escolha = input("\nEscolha: ").strip()
 
         if escolha == '1':
             root = Tk()
             root.withdraw()
-            arquivo = filedialog.askopenfilename(title="Selecione o documento")
+            caminho_origem = filedialog.askopenfilename(title="Selecione o documento")
             root.destroy()
 
-            if not arquivo:
-                print("\nOperação cancelada pelo usuário")
+            if not caminho_origem:
+                print("\nOperação cancelada")
                 continue
 
             try:
-                destino = BOOKS_DIR / Path(arquivo).name
-                shutil.copy(arquivo, destino)
-                print(f"\n✅ Documento {destino.name} adicionado com sucesso!")
-                git_auto_commit()
+                arquivo_destino = BOOKS_DIR / Path(caminho_origem).name
+                shutil.copy(caminho_origem, arquivo_destino)
+                print(f"\n✅ Documento {arquivo_destino.name} adicionado!")
+                git_auto_commit(arquivo_destino)
+
             except Exception as e:
-                print(f"\n❌ Erro ao copiar arquivo: {e}")
+                print(f"\n❌ Erro: {e}")
 
         elif escolha == '2':
-            caminho = input("\nDigite o caminho completo do arquivo: ").strip()
+            caminho = input("\nDigite o caminho completo: ").strip()
             if not caminho:
                 print("\n❌ Nenhum caminho fornecido")
                 continue
 
             try:
-                destino = BOOKS_DIR / Path(caminho).name
-                shutil.copy(caminho, destino)
-                print(f"\n✅ Documento {destino.name} adicionado com sucesso!")
-                git_auto_commit()
+                arquivo_destino = BOOKS_DIR / Path(caminho).name
+                shutil.copy(caminho, arquivo_destino)
+                print(f"\n✅ Documento {arquivo_destino.name} adicionado!")
+                git_auto_commit(arquivo_destino)
+
             except Exception as e:
-                print(f"\n❌ Erro ao copiar arquivo: {e}")
+                print(f"\n❌ Erro: {e}")
+
+        elif escolha == '0':
+            return
 
         else:
             print("\n❌ Opção inválida")
-            continue
 
-        # Opções pós-operacao
-        escolha = input("\n0. Voltar\n9. Sair\nEscolha: ").strip()
-        if escolha == '0':
-            return
-        elif escolha == '9':
-            sys.exit("👋 Programa encerrado pelo usuário")
+def menu_renomear():
+    """Menu para renomear documentos"""
+    print("\n✏️ Renomear Documento")
+    arquivo = selecionar_arquivo()
+    if not arquivo:
+        return
+
+    novo_nome = input("Novo nome (com extensão): ").strip()
+    if not novo_nome:
+        print("Nome inválido!")
+        return
+
+    try:
+        novo_path = arquivo.parent / novo_nome
+        arquivo.rename(novo_path)
+        print("✅ Arquivo renomeado!")
+        git_auto_commit(novo_path)
+    except Exception as e:
+        print(f"❌ Erro: {e}")
+
+def menu_remover():
+    """Menu para remover documentos"""
+    print("\n❌ Remover Documento")
+    arquivo = selecionar_arquivo()
+    if not arquivo:
+        return
+
+    confirmacao = input(f"Confirmar exclusão de {arquivo.name}? (s/n): ").lower()
+    if confirmacao == 's':
+        try:
+            arquivo.unlink()
+            print("✅ Arquivo removido!")
+
+            # Commit da remoção
+            subprocess.run(["git", "add", "."], cwd=REPO_DIR, check=True)
+            subprocess.run(["git", "commit", "-m", f"Removido: {arquivo.name}"],
+                          cwd=REPO_DIR, check=True)
+            subprocess.run(["git", "push"], cwd=REPO_DIR, check=True)
+
+        except Exception as e:
+            print(f"❌ Erro: {e}")
+
+def organizar_arquivos():
+    """Organiza os arquivos por categoria e ano"""
+    print("\n🔄 Organizando arquivos...")
+    for arquivo in BOOKS_DIR.rglob('*'):
+        if arquivo.is_file():
+            # Determinar categoria
+            categoria = next(
+                (cat for cat, exts in FILE_CATEGORIES.items()
+                 if arquivo.suffix.lower() in exts),
+                'Outros'
+            )
+
+            # Obter ano de criação
+            ano = datetime.fromtimestamp(arquivo.stat().st_ctime).year
+
+            # Criar diretório de destino
+            destino = BOOKS_DIR / categoria / str(ano)
+            destino.mkdir(parents=True, exist_ok=True)
+
+            try:
+                shutil.move(str(arquivo), destino / arquivo.name)
+            except Exception as e:
+                print(f"⚠️ Erro ao mover {arquivo.name}: {e}")
+
+    print("✅ Organização concluída!")
+    try:
+        subprocess.run(["git", "add", "."], cwd=REPO_DIR, check=True)
+        subprocess.run(["git", "commit", "-m", "Organização automática"],
+                      cwd=REPO_DIR, check=True)
+        subprocess.run(["git", "push"], cwd=REPO_DIR, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Erro no Git: {e}")
 
 def mostrar_menu_principal():
-    """Menu principal com navegação aprimorada"""
+    """Exibe o menu principal"""
     print("\n" + "="*50)
     print("📚 SISTEMA DE GESTÃO DE BIBLIOTECA DIGITAL".center(50))
     print("="*50)
@@ -128,7 +230,7 @@ def mostrar_menu_principal():
 def main():
     setup_environment()
 
-    # Inicialização do Tkinter se necessário
+    # Configurar GUI se necessário
     if 'DISPLAY' in os.environ or platform.system() == 'Windows':
         Tk().withdraw()
 
@@ -138,17 +240,23 @@ def main():
             escolha = input("\n▶ Escolha uma opção: ").strip()
 
             if escolha == '1':
-                # Implementação existente
-                pass
+                menu_listar()
             elif escolha == '2':
                 handle_add_document()
+            elif escolha == '3':
+                menu_renomear()
+            elif escolha == '4':
+                menu_remover()
+            elif escolha == '5':
+                organizar_arquivos()
             elif escolha == '6':
-                sys.exit("\n👋 Programa encerrado com sucesso!")
+                print("\n👋 Programa encerrado!")
+                sys.exit()
             else:
-                print("\n❌ Opção inválida! Tente novamente.")
+                print("\n❌ Opção inválida!")
 
         except KeyboardInterrupt:
-            print("\n\n⚠ Operação interrompida pelo usuário")
+            print("\n\n⚠ Operação cancelada pelo usuário")
         except Exception as e:
             print(f"\n‼️ Erro crítico: {e}")
             sys.exit(1)
