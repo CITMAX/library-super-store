@@ -31,7 +31,7 @@ def git_auto_commit():
     try:
         subprocess.run(["git", "add", "."], cwd=REPO_DIR, check=True)
         subprocess.run(["git", "commit", "-m", "Auto-commit: Atualização de arquivos"], 
-                      cwd=REPO_DIR, check=True)
+                       cwd=REPO_DIR, check=True)
         subprocess.run(["git", "push"], cwd=REPO_DIR, check=True)
     except subprocess.CalledProcessError as e:
         print(f"⚠️ Erro no Git: {e}")
@@ -52,7 +52,7 @@ def selecionar_arquivo():
     if not arquivos:
         print("Nenhum arquivo encontrado!")
         return None
-    
+
     while True:
         try:
             escolha = input("\nDigite o número do arquivo (0=Voltar): ").strip()
@@ -71,19 +71,19 @@ def handle_add_document():
         print("\n📂 Adicionar Documento")
         print("1. Procurar arquivo no computador")
         print("2. Digitar caminho manualmente")
-        
+
         escolha = input("\nEscolha: ").strip()
-        
+
         if escolha == '1':
             root = Tk()
             root.withdraw()
             arquivo = filedialog.askopenfilename(title="Selecione o documento")
             root.destroy()
-            
+
             if not arquivo:
                 print("\nOperação cancelada pelo usuário")
                 continue
-                
+
             try:
                 destino = BOOKS_DIR / Path(arquivo).name
                 shutil.copy(arquivo, destino)
@@ -91,13 +91,13 @@ def handle_add_document():
                 git_auto_commit()
             except Exception as e:
                 print(f"\n❌ Erro ao copiar arquivo: {e}")
-        
+
         elif escolha == '2':
             caminho = input("\nDigite o caminho completo do arquivo: ").strip()
             if not caminho:
                 print("\n❌ Nenhum caminho fornecido")
                 continue
-                
+
             try:
                 destino = BOOKS_DIR / Path(caminho).name
                 shutil.copy(caminho, destino)
@@ -105,11 +105,11 @@ def handle_add_document():
                 git_auto_commit()
             except Exception as e:
                 print(f"\n❌ Erro ao copiar arquivo: {e}")
-        
+
         else:
             print("\n❌ Opção inválida")
             continue
-            
+
         # Opções pós-operacao
         escolha = input("\n0. Voltar\n9. Sair\nEscolha: ").strip()
         if escolha == '0':
@@ -127,16 +127,16 @@ def mostrar_menu_principal():
 
 def main():
     setup_environment()
-    
+
     # Inicialização do Tkinter se necessário
     if 'DISPLAY' in os.environ or platform.system() == 'Windows':
         Tk().withdraw()
-    
+
     while True:
         try:
             mostrar_menu_principal()
             escolha = input("\n▶ Escolha uma opção: ").strip()
-            
+
             if escolha == '1':
                 # Implementação existente
                 pass
@@ -146,7 +146,7 @@ def main():
                 sys.exit("\n👋 Programa encerrado com sucesso!")
             else:
                 print("\n❌ Opção inválida! Tente novamente.")
-                
+
         except KeyboardInterrupt:
             print("\n\n⚠ Operação interrompida pelo usuário")
         except Exception as e:
@@ -155,3 +155,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
