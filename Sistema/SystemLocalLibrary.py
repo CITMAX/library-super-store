@@ -10,7 +10,7 @@ from tkinter import filedialog, Tk
 # Configurações globais
 REPO_DIR = Path("library-super-store")
 DOCS_DIR = REPO_DIR / "Documentação do Projeto"
-BOOKS_DIR = REPO_DIR / "Livros"  # Diretório dentro do repositório
+BOOKS_DIR = REPO_DIR / "Livros"
 FILE_CATEGORIES = {
     'Livros': ['.pdf', '.epub'],
     'Documentos': ['.doc', '.docx', '.txt', '.odt', '.xlsx']
@@ -19,12 +19,10 @@ FILE_CATEGORIES = {
 def setup_environment():
     """Configura o ambiente e estrutura de diretórios"""
     try:
-        # Criar diretórios necessários
         REPO_DIR.mkdir(exist_ok=True)
         DOCS_DIR.mkdir(exist_ok=True)
         BOOKS_DIR.mkdir(exist_ok=True)
 
-        # Criar .gitignore se não existir
         gitignore = REPO_DIR / ".gitignore"
         if not gitignore.exists():
             gitignore.write_text("*.DS_Store\n*.tmp\n*.bak\n__pycache__/\n")
@@ -33,14 +31,13 @@ def setup_environment():
         print(f"Erro crítico na configuração: {e}")
         sys.exit(1)
 
-def git_auto_commit(arquivo):
-    """Realiza commit automático do arquivo específico"""
+def git_local_commit(arquivo):
+    """Realiza commit local sem push automático"""
     try:
         subprocess.run(["git", "add", str(arquivo.relative_to(REPO_DIR))],
-                      cwd=REPO_DIR, check=True)
+                       cwd=REPO_DIR, check=True)
         subprocess.run(["git", "commit", "-m", f"Adicionado: {arquivo.name}"],
-                      cwd=REPO_DIR, check=True)
-        subprocess.run(["git", "push"], cwd=REPO_DIR, check=True)
+                       cwd=REPO_DIR, check=True)
     except subprocess.CalledProcessError as e:
         print(f"⚠️ Erro no Git: {e}")
 
@@ -118,7 +115,7 @@ def handle_add_document():
                 arquivo_destino = BOOKS_DIR / Path(caminho_origem).name
                 shutil.copy(caminho_origem, arquivo_destino)
                 print(f"\n✅ Documento {arquivo_destino.name} adicionado!")
-                git_auto_commit(arquivo_destino)
+                git_local_commit(arquivo_destino)
 
             except Exception as e:
                 print(f"\n❌ Erro: {e}")
@@ -133,7 +130,7 @@ def handle_add_document():
                 arquivo_destino = BOOKS_DIR / Path(caminho).name
                 shutil.copy(caminho, arquivo_destino)
                 print(f"\n✅ Documento {arquivo_destino.name} adicionado!")
-                git_auto_commit(arquivo_destino)
+                git_local_commit(arquivo_destino)
 
             except Exception as e:
                 print(f"\n❌ Erro: {e}")
@@ -160,7 +157,7 @@ def menu_renomear():
         novo_path = arquivo.parent / novo_nome
         arquivo.rename(novo_path)
         print("✅ Arquivo renomeado!")
-        git_auto_commit(novo_path)
+        git_local_commit(novo_path)
     except Exception as e:
         print(f"❌ Erro: {e}")
 
@@ -177,11 +174,9 @@ def menu_remover():
             arquivo.unlink()
             print("✅ Arquivo removido!")
 
-            # Commit da remoção
             subprocess.run(["git", "add", "."], cwd=REPO_DIR, check=True)
             subprocess.run(["git", "commit", "-m", f"Removido: {arquivo.name}"],
-                          cwd=REPO_DIR, check=True)
-            subprocess.run(["git", "push"], cwd=REPO_DIR, check=True)
+                           cwd=REPO_DIR, check=True)
 
         except Exception as e:
             print(f"❌ Erro: {e}")
@@ -191,17 +186,13 @@ def organizar_arquivos():
     print("\n🔄 Organizando arquivos...")
     for arquivo in BOOKS_DIR.rglob('*'):
         if arquivo.is_file():
-            # Determinar categoria
             categoria = next(
                 (cat for cat, exts in FILE_CATEGORIES.items()
                  if arquivo.suffix.lower() in exts),
                 'Outros'
             )
 
-            # Obter ano de criação
             ano = datetime.fromtimestamp(arquivo.stat().st_ctime).year
-
-            # Criar diretório de destino
             destino = BOOKS_DIR / categoria / str(ano)
             destino.mkdir(parents=True, exist_ok=True)
 
@@ -214,8 +205,7 @@ def organizar_arquivos():
     try:
         subprocess.run(["git", "add", "."], cwd=REPO_DIR, check=True)
         subprocess.run(["git", "commit", "-m", "Organização automática"],
-                      cwd=REPO_DIR, check=True)
-        subprocess.run(["git", "push"], cwd=REPO_DIR, check=True)
+                       cwd=REPO_DIR, check=True)
     except subprocess.CalledProcessError as e:
         print(f"⚠️ Erro no Git: {e}")
 
@@ -230,7 +220,6 @@ def mostrar_menu_principal():
 def main():
     setup_environment()
 
-    # Configurar GUI se necessário
     if 'DISPLAY' in os.environ or platform.system() == 'Windows':
         Tk().withdraw()
 
@@ -262,5 +251,4 @@ def main():
             sys.exit(1)
 
 if __name__ == "__main__":
-    main()
-    
+    main()    
