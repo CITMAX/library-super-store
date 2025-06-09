@@ -1,4 +1,4 @@
-![LogoBiblioteca](/Users/macintosh/Documents/PUCPR/Prog Ciencia Dados/system/github/library-super-store/Documentação do Projeto/LogoBiblioteca.png)
+![LogoBiblioteca.png](https://github.com/CITMAX/library-super-store/blob/main/Documenta%C3%A7%C3%A3o%20do%20Projeto/LogoBiblioteca.png?raw=true)
 
 ---
 

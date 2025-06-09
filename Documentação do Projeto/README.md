@@ -1,3 +1,5 @@
+![LogoBiblioteca.png](https://github.com/CITMAX/library-super-store/blob/main/Documenta%C3%A7%C3%A3o%20do%20Projeto/LogoBiblioteca.png?raw=true)
+
 # library-super-store
 
 #### Visão Geral do Projeto
